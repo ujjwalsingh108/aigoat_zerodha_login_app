@@ -1,0 +1,28 @@
+{
+  "name": "aigoat-zerodha-login-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "kite-auth": "tsx scripts/kite/kite-token-manager.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.4.5",
+    "kiteconnect": "^4.0.2",
+    "next": "^15.3.9",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "axios": "^1.8.4",
+    "serialize-javascript": "^6.0.2"
+  }
+}
