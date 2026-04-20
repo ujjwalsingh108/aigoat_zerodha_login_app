@@ -2,156 +2,90 @@
 
 import { useState } from 'react';
 
-// ── Step IDs ──────────────────────────────────────────────────────────────────
-const STEP_INIT = 'init';
+const STEP_INIT  = 'init';
 const STEP_PASTE = 'paste';
-const STEP_DONE = 'done';
+const STEP_DONE  = 'done';
 const STEP_ERROR = 'error';
 
-// ── Inline styles ─────────────────────────────────────────────────────────────
-const s = {
-  page: {
-    fontFamily: 'system-ui, sans-serif',
-    maxWidth: 540,
-    margin: '72px auto',
-    padding: '0 20px',
-  },
-  h1: { fontSize: 22, fontWeight: 700, marginBottom: 4 },
-  sub: { color: '#555', fontSize: 14, marginBottom: 28 },
-  card: {
-    border: '1px solid #ddd',
-    borderRadius: 10,
-    padding: 32,
-    background: '#fff',
-    boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-  },
-  stepBar: { display: 'flex', gap: 24, marginBottom: 28 },
-  stepItem: { display: 'flex', alignItems: 'center', gap: 8 },
-  dot: (active, done) => ({
-    width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-    background: done ? '#4caf50' : active ? '#1976d2' : '#ccc',
-  }),
-  stepLabel: (active) => ({
-    fontSize: 13,
-    fontWeight: active ? 700 : 400,
-    color: active ? '#1976d2' : '#888',
-  }),
-  hint: { fontSize: 14, color: '#444', marginBottom: 20, lineHeight: 1.55 },
-  label: { display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 6 },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    fontSize: 13,
-    fontFamily: 'monospace',
-    border: '1px solid #bbb',
-    borderRadius: 6,
-    marginBottom: 16,
-    outline: 'none',
-  },
-  btn: (color = '#1976d2') => ({
-    padding: '10px 22px',
-    background: color,
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    fontSize: 15,
-    fontWeight: 600,
-    cursor: 'pointer',
-  }),
-  btnDisabled: { opacity: 0.55, cursor: 'not-allowed' },
-  successBox: {
-    background: '#f0faf3',
-    border: '1px solid #66bb6a',
-    borderRadius: 8,
-    padding: '16px 20px',
-    marginBottom: 20,
-  },
-  errorBox: {
-    background: '#fff5f5',
-    border: '1px solid #ef9a9a',
-    borderRadius: 8,
-    padding: '16px 20px',
-    color: '#c62828',
-    marginTop: 16,
-  },
-  badge: (ok) => ({
-    display: 'inline-block',
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '2px 8px',
-    borderRadius: 4,
-    marginRight: 6,
-    marginTop: 10,
-    background: ok ? '#c8e6c9' : '#fff3e0',
-    color: ok ? '#2e7d32' : '#e65100',
-  }),
-  tokenBox: {
-    marginTop: 16,
-    background: '#f5f5f5',
-    borderRadius: 6,
-    padding: '12px 14px',
-    fontFamily: 'monospace',
-    fontSize: 12,
-    wordBreak: 'break-all',
-    color: '#333',
-  },
-};
+// All CSS lives in app/globals.css
 
-// ── Step indicator ────────────────────────────────────────────────────────────
+function Spinner() {
+  return <div className="kite-spinner" />;
+}
+
 function StepBar({ step }) {
-  const steps = ['Start login', 'Paste URL', 'Done'];
-  const order = [STEP_INIT, STEP_PASTE, STEP_DONE];
-  const current = order.indexOf(step === STEP_ERROR ? STEP_PASTE : step);
+  const labels = ['Start Login', 'Paste URL', 'Done'];
+  const order  = [STEP_INIT, STEP_PASTE, STEP_DONE];
+  const cur    = order.indexOf(step === STEP_ERROR ? STEP_PASTE : step);
 
   return (
-    <div style={s.stepBar}>
-      {steps.map((label, i) => (
-        <div key={label} style={s.stepItem}>
-          <div style={s.dot(i === current, i < current)} />
-          <span style={s.stepLabel(i === current)}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 36 }}>
+      {labels.map((label, i) => (
+        <div key={label} style={{ display: 'flex', alignItems: 'center', flex: i < labels.length - 1 ? 1 : 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+            <div className={`step-circle ${i < cur ? 'done' : i === cur ? 'active' : 'idle'}`}>
+              {i < cur ? '✓' : i + 1}
+            </div>
+            <span style={{
+              fontSize: 11, whiteSpace: 'nowrap', letterSpacing: '.03em',
+              fontWeight: i === cur ? 700 : 500,
+              color: i === cur ? '#ff6600' : i < cur ? '#64748b' : '#94a3b8',
+            }}>
+              {label}
+            </span>
+          </div>
+          {i < labels.length - 1 && (
+            <div className="step-connector">
+              <div className="step-connector-fill" style={{ width: i < cur ? '100%' : '0%' }} />
+            </div>
+          )}
         </div>
       ))}
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-export default function Home() {
-  const [step, setStep] = useState(STEP_INIT);
-  const [loginUrl, setLoginUrl] = useState('');
-  const [redirectUrl, setRedirectUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <button className={`kite-copy-btn${copied ? ' copied' : ''}`} onClick={copy}>
+      {copied ? '✓ Copied!' : '⎘ Copy'}
+    </button>
+  );
+}
 
-  // Step 1 — get login URL, open it in new tab
+export default function Home() {
+  const [step,        setStep]        = useState(STEP_INIT);
+  const [loginUrl,    setLoginUrl]    = useState('');
+  const [redirectUrl, setRedirectUrl] = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [result,      setResult]      = useState(null);
+  const [error,       setError]       = useState('');
+
   async function handleStartLogin() {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
-      const res = await fetch('/api/start-login', { method: 'POST' });
+      const res  = await fetch('/api/start-login', { method: 'POST' });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Could not get login URL');
       setLoginUrl(data.loginUrl);
       window.open(data.loginUrl, '_blank', 'noopener,noreferrer');
       setStep(STEP_PASTE);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   }
 
-  // Step 2 — exchange token
   async function handleExchangeToken() {
-    if (!redirectUrl.trim()) {
-      setError('Please paste the redirect URL first.');
-      return;
-    }
-    setLoading(true);
-    setError('');
+    if (!redirectUrl.trim()) { setError('Please paste the redirect URL first.'); return; }
+    setLoading(true); setError('');
     try {
-      const res = await fetch('/api/exchange-token', {
+      const res  = await fetch('/api/exchange-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ redirectUrl: redirectUrl.trim() }),
@@ -160,137 +94,190 @@ export default function Home() {
       if (!data.success) throw new Error(data.error || 'Token exchange failed');
       setResult(data);
       setStep(STEP_DONE);
-    } catch (err) {
-      setError(err.message);
-      setStep(STEP_ERROR);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); setStep(STEP_ERROR); }
+    finally { setLoading(false); }
   }
 
   function reset() {
-    setStep(STEP_INIT);
-    setLoginUrl('');
-    setRedirectUrl('');
-    setResult(null);
-    setError('');
+    setStep(STEP_INIT); setLoginUrl(''); setRedirectUrl(''); setResult(null); setError('');
   }
 
-  return (
-    <div style={s.page}>
-      <h1 style={s.h1}>Zerodha Kite Login Helper</h1>
-      <p style={s.sub}>Generates an access token and stores it in Supabase and your droplet.</p>
+  const UpperLabel = ({ children }) => (
+    <span style={{
+      display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b',
+      letterSpacing: '.07em', textTransform: 'uppercase', marginBottom: 8,
+    }}>
+      {children}
+    </span>
+  );
 
-      <div style={s.card}>
+  const badgeClass = (val) =>
+    val === true ? 'status-badge badge-ok' : val === false ? 'status-badge badge-warn' : 'status-badge badge-skip';
+
+  const badgeLabel = (label, val) =>
+    val === true ? ('\u2713 ' + label) : val === false ? ('\u26a0 ' + label) : ('\u2014 ' + label);
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(160deg, #fff7ed 0%, #f8fafc 45%, #eff6ff 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px 16px',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{
+          width: 60, height: 60,
+          background: 'linear-gradient(135deg, #ff6600, #e85500)',
+          borderRadius: 18,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 28, margin: '0 auto 18px',
+          boxShadow: '0 6px 20px rgba(255,102,0,.35)',
+        }}>{String.fromCodePoint(0x1F510)}</div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', letterSpacing: '-.03em' }}>
+          Zerodha Kite Login
+        </h1>
+        <p style={{ color: '#64748b', fontSize: 14, marginTop: 7, fontWeight: 500 }}>
+          Generate your access token in a few clicks
+        </p>
+      </div>
+
+      <div className="kite-card">
         <StepBar step={step} />
 
-        {/* ── Step 1: Start ─────────────────────────────────────────────── */}
         {step === STEP_INIT && (
-          <div>
-            <p style={s.hint}>
-              Click below to open the Zerodha Kite login page. Log in with your
-              credentials and TOTP, then copy the full redirect URL from the browser
-              address bar.
+          <div className="fade-up">
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
+              Sign in to Kite
+            </h2>
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.65, marginBottom: 22 }}>
+              Opens the official Zerodha login page. After authenticating with your
+              credentials and TOTP, copy the full URL from the address bar and paste
+              it in the next step.
             </p>
-            <button
-              style={{ ...s.btn(), ...(loading ? s.btnDisabled : {}) }}
-              onClick={handleStartLogin}
-              disabled={loading}
-            >
-              {loading ? 'Opening…' : '🔑 Login with Kite'}
+            <div className="kite-tip">
+              <span style={{ fontSize: 19, flexShrink: 0 }}>{String.fromCodePoint(0x1F4A1)}</span>
+              <p style={{ fontSize: 13, color: '#9a3412', lineHeight: 1.55 }}>
+                Look for{' '}
+                <code style={{ background: '#fde8d0', borderRadius: 4, padding: '1px 6px', fontSize: 12, fontWeight: 600 }}>
+                  request_token=
+                </code>
+                {' '}in the redirect URL — paste the <strong>entire URL</strong>, not just the token.
+              </p>
+            </div>
+            <button className="kite-btn-primary" onClick={handleStartLogin} disabled={loading}>
+              {loading ? <Spinner /> : <span>{String.fromCodePoint(0x1F511)}</span>}
+              {loading ? 'Opening Kite…' : 'Open Kite Login'}
             </button>
+            {error && <div className="kite-error"><span>⚠️</span><span>{error}</span></div>}
           </div>
         )}
 
-        {/* ── Step 2: Paste URL ─────────────────────────────────────────── */}
         {(step === STEP_PASTE || step === STEP_ERROR) && (
-          <div>
-            <p style={s.hint}>
-              After logging in, Zerodha will redirect you to a URL containing{' '}
-              <code>?request_token=…</code>. Copy that full URL and paste it below.
+          <div className="fade-up">
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>
+              Paste the redirect URL
+            </h2>
+            <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.65, marginBottom: 22 }}>
+              After login, Zerodha redirects to a URL containing{' '}
+              <code style={{ background: '#f1f5f9', borderRadius: 4, padding: '1px 6px', fontSize: 12 }}>
+                ?request_token=…
+              </code>
+              . Paste the full URL below.
               {loginUrl && (
                 <>
-                  {' '}
-                  If the tab did not open,{' '}
-                  <a href={loginUrl} target="_blank" rel="noreferrer">
-                    click here
+                  {' '}Tab did not open?{' '}
+                  <a href={loginUrl} target="_blank" rel="noreferrer"
+                    style={{ color: '#ff6600', fontWeight: 600, textDecoration: 'none' }}>
+                    Click here ↗
                   </a>
-                  .
                 </>
               )}
             </p>
-
-            <label style={s.label} htmlFor="rurl">
-              Full redirect URL
-            </label>
+            <UpperLabel>Full Redirect URL</UpperLabel>
             <input
               id="rurl"
-              style={s.input}
+              className="kite-input"
               type="text"
               placeholder="https://…?request_token=abc123&status=success"
               value={redirectUrl}
-              onChange={(e) => {
-                setRedirectUrl(e.target.value);
-                setError('');
-              }}
+              onChange={(e) => { setRedirectUrl(e.target.value); setError(''); }}
               autoFocus
+              style={{ marginBottom: 20 }}
             />
-
-            <button
-              style={{ ...s.btn(), ...(loading ? s.btnDisabled : {}) }}
-              onClick={handleExchangeToken}
-              disabled={loading}
-            >
-              {loading ? 'Processing…' : 'Proceed →'}
+            <button className="kite-btn-primary" onClick={handleExchangeToken} disabled={loading}>
+              {loading ? <Spinner /> : null}
+              {loading ? 'Exchanging token…' : 'Exchange Token →'}
             </button>
-
-            {error && <div style={s.errorBox}>{error}</div>}
+            {error && <div className="kite-error"><span style={{ flexShrink: 0 }}>⚠️</span><span>{error}</span></div>}
           </div>
         )}
 
-        {/* ── Step 3: Done ──────────────────────────────────────────────── */}
         {step === STEP_DONE && result && (
-          <div>
-            <div style={s.successBox}>
-              <strong>✅ Access token generated successfully!</strong>
+          <div className="fade-up">
+            <div className="kite-success-box">
+              <div className="pop-in" style={{
+                width: 62, height: 62, margin: '0 auto 14px',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                borderRadius: '50%', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 26, color: '#fff',
+                boxShadow: '0 6px 18px rgba(22,163,74,.35)',
+              }}>✓</div>
+              <h2 style={{ fontSize: 19, fontWeight: 800, color: '#14532d', marginBottom: 6 }}>
+                Token Generated!
+              </h2>
               {result.userName && (
-                <p style={{ marginTop: 8, fontSize: 14 }}>
-                  Logged in as <strong>{result.userName}</strong>
-                  {result.userId ? ` (${result.userId})` : ''}
-                </p>
-              )}
-              <div>
-                <span style={s.badge(result.stored?.supabase)}>
-                  {result.stored?.supabase ? '✓ Supabase' : '⚠ Supabase failed'}
-                </span>
-                <span style={s.badge(result.stored?.droplet)}>
-                  {result.stored?.droplet ? '✓ Droplet' : '⚠ Droplet failed'}
-                </span>
-              </div>
-              {result.stored?.supabaseError && (
-                <p style={{ fontSize: 12, color: '#e65100', marginTop: 6 }}>
-                  Supabase: {result.stored.supabaseError}
-                </p>
-              )}
-              {result.stored?.dropletError && (
-                <p style={{ fontSize: 12, color: '#e65100', marginTop: 4 }}>
-                  Droplet: {result.stored.dropletError}
+                <p style={{ fontSize: 14, color: '#166534' }}>
+                  Signed in as <strong>{result.userName}</strong>
+                  {result.userId && <span style={{ color: '#4ade80' }}> · {result.userId}</span>}
                 </p>
               )}
             </div>
 
-            <label style={s.label}>Access Token</label>
-            <div style={s.tokenBox}>{result.accessToken}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 22 }}>
+              <span className={badgeClass(result.stored?.supabase)}>
+                {badgeLabel('Supabase', result.stored?.supabase)}
+              </span>
+              <span className={badgeClass(result.stored?.droplet)}>
+                {badgeLabel('Droplet', result.stored?.droplet)}
+              </span>
+              {result.expiresAt && (
+                <span className="status-badge badge-skip">
+                  {String.fromCodePoint(0x1F550)} Expires {new Date(result.expiresAt).toLocaleString('en-IN', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                  })}
+                </span>
+              )}
+            </div>
 
-            <button
-              style={{ ...s.btn('#555'), marginTop: 20 }}
-              onClick={reset}
-            >
-              Start Over
-            </button>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <UpperLabel>Access Token</UpperLabel>
+                <CopyButton text={result.accessToken} />
+              </div>
+              <div className="kite-token-box">{result.accessToken}</div>
+            </div>
+
+            {(result.stored?.supabaseError || result.stored?.dropletError) && (
+              <div className="kite-error" style={{ marginBottom: 20 }}>
+                <span style={{ flexShrink: 0 }}>⚠️</span>
+                <div>
+                  {result.stored?.supabaseError && <div>Supabase: {result.stored.supabaseError}</div>}
+                  {result.stored?.dropletError   && <div>Droplet: {result.stored.dropletError}</div>}
+                </div>
+              </div>
+            )}
+
+            <button className="kite-btn-ghost" onClick={reset}>↺ Start Over</button>
           </div>
         )}
       </div>
+
+      <p style={{ marginTop: 20, fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+        Token stored securely in Supabase · Droplet restarted automatically
+      </p>
     </div>
   );
 }
